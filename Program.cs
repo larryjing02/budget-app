@@ -28,6 +28,7 @@
                         break;
                     case "5":
                         repeat = false;
+                        Console.WriteLine("Thank you for using the expense tracker!");
                         break;
                     default:
                         Console.WriteLine("Invalid option! Please try again.");
@@ -82,12 +83,18 @@
 
         private static DateTime GetUserDate() {
             DateTime date;
-            Console.Write("Please enter the expense date/time (mm/dd/yy hh:mm tt): ");
-            while (!DateTime.TryParse(Console.ReadLine(), out date)) {
-                Console.Write("Invalid format. Please enter expense date/time (mm/dd/yy hh:mm tt): ");
+            Console.Write("Please enter the expense date/time (mm/dd/yy hh:mm tt), or press enter for current date/time: ");
+            var userInput = Console.ReadLine();
+            while (!String.IsNullOrWhiteSpace(userInput) & !DateTime.TryParse(userInput, out date)) {
+                Console.Write("Invalid format. Please enter expense date/time (mm/dd/yy hh:mm tt), or press enter for current date/time: ");
+                userInput = Console.ReadLine();
             }
-            return date;
+            if (String.IsNullOrWhiteSpace(userInput)) {
+                return DateTime.Now;
+            } 
+            return date;    
         }
+
 
         private static string? GetUserDescription() {
             Console.Write("Please enter a short description of the expense (press enter to skip): ");
@@ -103,11 +110,12 @@
                 return;
             }
             // Print out expenses in tabular format
-            Console.WriteLine(" {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}", "ID", "Amount", "Category", "Date", "Description");
+            var colFormatStr = " {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}";
+            Console.WriteLine(colFormatStr, "ID", "Amount", "Category", "Date", "Description");
             Console.WriteLine(new string('-', 80));
             int count = 1;
             foreach (ExpenseItem item in Program._expenseItems) {
-                Console.WriteLine(" {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}", 
+                Console.WriteLine(colFormatStr, 
                     count++,
                     "$" + item.Amount,
                     item.Category,
@@ -164,6 +172,30 @@
 
         private static void DeleteExpense() {
             Console.WriteLine("Deleting an expense!");
+            if (Program._expenseItems.Count == 0) {
+                Console.WriteLine("No expenses to edit!");
+                return;
+            }
+            int ind;
+            Console.Write("Enter the number of the expense you wish to edit: ");
+            while (!int.TryParse(Console.ReadLine(), out ind) | ind <= 0 | ind > Program._expenseItems.Count) {
+                Console.Write($"Invalid format. Please enter number (1 - {Program._expenseItems.Count}): ");
+            }
+            var expense = Program._expenseItems[ind - 1];
+            Console.WriteLine("You selected the following expense: ");
+            Console.WriteLine($"Amount: ${expense.Amount}");
+            Console.WriteLine($"Category: {expense.Category}");
+            Console.WriteLine($"Date: {expense.Date.ToString("MM/dd/yyyy hh:mm tt")}");
+            Console.WriteLine($"Description: {expense.Description ?? "N/A"}");
+            Console.WriteLine("Are you sure you want to delete this expense? Press Y to confirm.");
+            if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase)) {
+                Program._expenseItems.RemoveAt(ind - 1);
+                Console.WriteLine("Expense successfully removed!");
+                Console.WriteLine("Press any key to return to the main menu.");
+                Console.ReadKey(true);
+            } else {
+                Console.WriteLine("Expense deletion cancelled!");
+            }
         }
     }
 }
