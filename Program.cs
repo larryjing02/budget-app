@@ -54,6 +54,8 @@
             string? description = GetUserDescription();
             Program._expenseItems.Add(new ExpenseItem(amount, category, date, description));
             Console.WriteLine("Expense successfully added!");
+            Console.WriteLine("Press any key to return to the main menu.");
+            Console.ReadKey(true);
         }
 
         private static decimal GetUserAmount() {
@@ -96,10 +98,68 @@
 
         private static void ViewExpenses() {
             Console.WriteLine("Viewing expenses!");
+            if (Program._expenseItems.Count == 0) {
+                Console.WriteLine("No expenses to view!");
+                return;
+            }
+            // Print out expenses in tabular format
+            Console.WriteLine(" {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}", "ID", "Amount", "Category", "Date", "Description");
+            Console.WriteLine(new string('-', 80));
+            int count = 1;
+            foreach (ExpenseItem item in Program._expenseItems) {
+                Console.WriteLine(" {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}", 
+                    count++,
+                    "$" + item.Amount,
+                    item.Category,
+                    item.Date.ToString("MM/dd/yyyy hh:mm tt"),
+                    item.Description ?? "N/A");
+            }
+            Console.WriteLine("Press any key to return to the main menu.");
+            Console.ReadKey(true);
         }
 
         private static void EditExpense() {
             Console.WriteLine("Editing an expense!");
+            if (Program._expenseItems.Count == 0) {
+                Console.WriteLine("No expenses to edit!");
+                return;
+            }
+            int ind, field;
+            Console.Write("Enter the number of the expense you wish to edit: ");
+            while (!int.TryParse(Console.ReadLine(), out ind) | ind <= 0 | ind > Program._expenseItems.Count) {
+                Console.Write($"Invalid format. Please enter number (1 - {Program._expenseItems.Count}): ");
+            }
+            var expense = Program._expenseItems[ind - 1];
+            Console.WriteLine("You selected the following expense: ");
+            Console.WriteLine($"1. Amount (${expense.Amount})");
+            Console.WriteLine($"2. Category ({expense.Category})");
+            Console.WriteLine($"3. Date ({expense.Date.ToString("MM/dd/yyyy hh:mm tt")})");
+            Console.WriteLine($"4. Description ({expense.Description ?? "N/A"})");
+            Console.Write("Which field would you like to edit? ");
+            while (!int.TryParse(Console.ReadLine(), out field) | field <= 0 | field > 4) {
+                Console.Write("Invalid format. Please enter field number (1 - 4): ");
+            }
+            switch (field) {
+                case 1:
+                    Console.WriteLine("Editing the expense amount!");
+                    expense.Amount = GetUserAmount();
+                    break;
+                case 2:
+                    Console.WriteLine("Editing the expense category!");
+                    expense.Category = GetUserCategory();
+                    break;
+                case 3:
+                    Console.WriteLine("Editing the expense date!");
+                    expense.Date = GetUserDate();
+                    break;
+                case 4:
+                    Console.WriteLine("Editing the expense description!");
+                    expense.Description = GetUserDescription();
+                    break;
+            }
+            Console.WriteLine("Expense successfully edited!");
+            Console.WriteLine("Press any key to return to the main menu.");
+            Console.ReadKey(true);
         }
 
         private static void DeleteExpense() {
