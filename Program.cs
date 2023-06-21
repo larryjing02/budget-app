@@ -2,7 +2,6 @@
     public class Program {
 
         private static readonly string[] CATEGORIES = {"Housing", "Transportation", "Groceries", "Dining", "Utilities", "Health and Wellness", "Clothing", "Education", "Entertainment", "Miscellaneous"};
-        private static List<ExpenseItem> _expenseItems = new List<ExpenseItem>();
 
         public static void Main(string[] args) {
             Console.WriteLine("===========================================");
@@ -53,7 +52,15 @@
             string category = GetUserCategory();
             DateTime date = GetUserDate();
             string? description = GetUserDescription();
-            Program._expenseItems.Add(new ExpenseItem(amount, category, date, description));
+            PerformDatabaseOperation(db => {
+                var expense = new ExpenseModel {
+                    Amount = amount,
+                    Category = category,
+                    Date = date,
+                    Description = description
+                };
+                db.Expenses.Add(expense);
+            });
             Console.WriteLine("Expense successfully added!");
             Console.WriteLine("Press any key to return to the main menu.");
             Console.ReadKey(true);
@@ -75,7 +82,7 @@
             }
             Console.Write("Please enter the number that best fits your expense: ");
             int ind;
-            while (!int.TryParse(Console.ReadLine(), out ind) | ind <= 0 | ind > Program.CATEGORIES.Length) {
+            while (!int.TryParse(Console.ReadLine(), out ind) || ind <= 0 || ind > Program.CATEGORIES.Length) {
                 Console.Write($"Invalid format. Please enter number (1 - {Program.CATEGORIES.Length}): ");
             }
             return Program.CATEGORIES[ind - 1];
@@ -105,66 +112,70 @@
 
         private static void ViewExpenses() {
             Console.WriteLine("Viewing expenses!");
-            if (Program._expenseItems.Count == 0) {
-                Console.WriteLine("No expenses to view!");
-                return;
-            }
-            // Print out expenses in tabular format
-            var colFormatStr = " {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}";
-            Console.WriteLine(colFormatStr, "ID", "Amount", "Category", "Date", "Description");
-            Console.WriteLine(new string('-', 80));
-            int count = 1;
-            foreach (ExpenseItem item in Program._expenseItems) {
-                Console.WriteLine(colFormatStr, 
-                    count++,
-                    "$" + item.Amount,
-                    item.Category,
-                    item.Date.ToString("MM/dd/yyyy hh:mm tt"),
-                    item.Description ?? "N/A");
-            }
+            PerformDatabaseOperation(db => {
+                if (db.Expenses.Count() == 0) {
+                    Console.WriteLine("No expenses to view!");
+                    return;
+                }
+                // Print out expenses in tabular format
+                var colFormatStr = " {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}";
+                Console.WriteLine(colFormatStr, "ID", "Amount", "Category", "Date", "Description");
+                Console.WriteLine(new string('-', 80));
+                foreach (ExpenseModel item in db.Expenses) {
+                    Console.WriteLine(colFormatStr, 
+                        item.ExpenseId,
+                        "$" + item.Amount.ToString("F2"),
+                        item.Category,
+                        item.Date.ToString("MM/dd/yyyy hh:mm tt"),
+                        item.Description ?? "N/A");
+                }
+            });
             Console.WriteLine("Press any key to return to the main menu.");
             Console.ReadKey(true);
         }
 
         private static void EditExpense() {
             Console.WriteLine("Editing an expense!");
-            if (Program._expenseItems.Count == 0) {
-                Console.WriteLine("No expenses to edit!");
-                return;
-            }
-            int ind, field;
-            Console.Write("Enter the number of the expense you wish to edit: ");
-            while (!int.TryParse(Console.ReadLine(), out ind) | ind <= 0 | ind > Program._expenseItems.Count) {
-                Console.Write($"Invalid format. Please enter number (1 - {Program._expenseItems.Count}): ");
-            }
-            var expense = Program._expenseItems[ind - 1];
-            Console.WriteLine("You selected the following expense: ");
-            Console.WriteLine($"1. Amount (${expense.Amount})");
-            Console.WriteLine($"2. Category ({expense.Category})");
-            Console.WriteLine($"3. Date ({expense.Date.ToString("MM/dd/yyyy hh:mm tt")})");
-            Console.WriteLine($"4. Description ({expense.Description ?? "N/A"})");
-            Console.Write("Which field would you like to edit? ");
-            while (!int.TryParse(Console.ReadLine(), out field) | field <= 0 | field > 4) {
-                Console.Write("Invalid format. Please enter field number (1 - 4): ");
-            }
-            switch (field) {
-                case 1:
-                    Console.WriteLine("Editing the expense amount!");
-                    expense.Amount = GetUserAmount();
-                    break;
-                case 2:
-                    Console.WriteLine("Editing the expense category!");
-                    expense.Category = GetUserCategory();
-                    break;
-                case 3:
-                    Console.WriteLine("Editing the expense date!");
-                    expense.Date = GetUserDate();
-                    break;
-                case 4:
-                    Console.WriteLine("Editing the expense description!");
-                    expense.Description = GetUserDescription();
-                    break;
-            }
+            PerformDatabaseOperation(db => {
+                var numExpenses = db.Expenses.Count();
+                if (numExpenses == 0) {
+                    Console.WriteLine("No expenses to edit!");
+                    return;
+                }
+                int expenseId, field;
+                ExpenseModel? expense;
+                Console.Write("Enter the ID of the expense you wish to edit: ");
+                while (!int.TryParse(Console.ReadLine(), out expenseId) || (expense = db.Expenses.Find(expenseId)) == null) {
+                    Console.Write($"Invalid format. Please enter corresponding ID number: ");
+                }
+                Console.WriteLine("You selected the following expense: ");
+                Console.WriteLine($"1. Amount (${expense.Amount.ToString("F2")})");
+                Console.WriteLine($"2. Category ({expense.Category})");
+                Console.WriteLine($"3. Date ({expense.Date.ToString("MM/dd/yyyy hh:mm tt")})");
+                Console.WriteLine($"4. Description ({expense.Description ?? "N/A"})");
+                Console.Write("Which field would you like to edit? ");
+                while (!int.TryParse(Console.ReadLine(), out field) | field <= 0 | field > 4) {
+                    Console.Write("Invalid format. Please enter field number (1 - 4): ");
+                }
+                switch (field) {
+                    case 1:
+                        Console.WriteLine("Editing the expense amount!");
+                        expense.Amount = GetUserAmount();
+                        break;
+                    case 2:
+                        Console.WriteLine("Editing the expense category!");
+                        expense.Category = GetUserCategory();
+                        break;
+                    case 3:
+                        Console.WriteLine("Editing the expense date!");
+                        expense.Date = GetUserDate();
+                        break;
+                    case 4:
+                        Console.WriteLine("Editing the expense description!");
+                        expense.Description = GetUserDescription();
+                        break;
+                }
+            });
             Console.WriteLine("Expense successfully edited!");
             Console.WriteLine("Press any key to return to the main menu.");
             Console.ReadKey(true);
@@ -172,30 +183,41 @@
 
         private static void DeleteExpense() {
             Console.WriteLine("Deleting an expense!");
-            if (Program._expenseItems.Count == 0) {
-                Console.WriteLine("No expenses to edit!");
-                return;
-            }
-            int ind;
-            Console.Write("Enter the number of the expense you wish to edit: ");
-            while (!int.TryParse(Console.ReadLine(), out ind) | ind <= 0 | ind > Program._expenseItems.Count) {
-                Console.Write($"Invalid format. Please enter number (1 - {Program._expenseItems.Count}): ");
-            }
-            var expense = Program._expenseItems[ind - 1];
-            Console.WriteLine("You selected the following expense: ");
-            Console.WriteLine($"Amount: ${expense.Amount}");
-            Console.WriteLine($"Category: {expense.Category}");
-            Console.WriteLine($"Date: {expense.Date.ToString("MM/dd/yyyy hh:mm tt")}");
-            Console.WriteLine($"Description: {expense.Description ?? "N/A"}");
-            Console.WriteLine("Are you sure you want to delete this expense? Press Y to confirm.");
-            if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase)) {
-                Program._expenseItems.RemoveAt(ind - 1);
-                Console.WriteLine("Expense successfully removed!");
-                Console.WriteLine("Press any key to return to the main menu.");
-                Console.ReadKey(true);
-            } else {
-                Console.WriteLine("Expense deletion cancelled!");
-            }
+            PerformDatabaseOperation(db => {
+                var numExpenses = db.Expenses.Count();
+                if (numExpenses == 0) {
+                    Console.WriteLine("No expenses to delete!");
+                    return;
+                }
+                int expenseId;
+                ExpenseModel? expense;
+                Console.Write("Enter the ID of the expense you wish to delete: ");
+                while (!int.TryParse(Console.ReadLine(), out expenseId) || (expense = db.Expenses.Find(expenseId)) == null) {
+                    Console.Write($"Invalid format. Please enter corresponding ID number: ");
+                }
+                Console.WriteLine("You selected the following expense: ");
+                Console.WriteLine($"Amount: ${expense.Amount.ToString("F2")}");
+                Console.WriteLine($"Category: {expense.Category}");
+                Console.WriteLine($"Date: {expense.Date.ToString("MM/dd/yyyy hh:mm tt")}");
+                Console.WriteLine($"Description: {expense.Description ?? "N/A"}");
+                Console.WriteLine("Are you sure you want to delete this expense? Press Y to confirm.");
+                if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase)) {
+                    db.Expenses.Remove(expense);
+                    Console.WriteLine("Expense successfully removed!");
+                    Console.WriteLine("Press any key to return to the main menu.");
+                    Console.ReadKey(true);
+                } else {
+                    Console.WriteLine("Expense deletion cancelled!");
+                }
+            });
         }
+
+        // Simple wrapper for database operations
+        public static void PerformDatabaseOperation(Action<ExpenseContext> operation) {
+            using var db = new ExpenseContext();
+            operation(db);
+            db.SaveChanges();
+        }
+
     }
 }

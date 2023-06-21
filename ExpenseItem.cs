@@ -1,4 +1,6 @@
 namespace MiniBudget {
+
+    // In-memory expense object (deprecated - see ExpenseModel.cs)
     public class ExpenseItem {
         public decimal Amount { get; set; }
         public string Category { get; set; }
