@@ -117,11 +117,50 @@
                     Console.WriteLine("No expenses to view!");
                     return;
                 }
+                int orderField;
+                Console.WriteLine("How do you want to order your results?");
+                Console.WriteLine("    1. Amount (Highest)");
+                Console.WriteLine("    2. Amount (Lowest)");
+                Console.WriteLine("    3. Category");
+                Console.WriteLine("    4. Date (Oldest)");
+                Console.WriteLine("    5. Date (Newest)");
+                Console.WriteLine("    6. ID");
+                Console.Write("Which field would you like to order by? ");
+                while (!int.TryParse(Console.ReadLine(), out orderField) || orderField <= 0 || orderField > 6) {
+                    Console.Write("Invalid format. Please enter field number (1 - 6): ");
+                }
+                List<ExpenseModel> expenses = db.Expenses.ToList();
+                switch (orderField) {
+                    case 1:
+                        Console.WriteLine("Ordering by amount (highest first)!");
+                        expenses = expenses.OrderByDescending(e => e.Amount).ToList();
+                        break;
+                    case 2:
+                        Console.WriteLine("Ordering by amount (lowest first)!");
+                        expenses = expenses.OrderBy(e => e.Amount).ToList();
+                        break;
+                    case 3:
+                        Console.WriteLine("Ordering by expense category!");
+                        expenses = expenses.OrderBy(e => e.Category).ToList();
+                        break;
+                    case 4:
+                        Console.WriteLine("Ordering by date (oldest first)!");
+                        expenses = expenses.OrderBy(e => e.Date).ToList();
+                        break;
+                    case 5:
+                        Console.WriteLine("Ordering by date (newest first)!");
+                        expenses = expenses.OrderByDescending(e => e.Date).ToList();
+                        break;
+                    case 6:
+                        Console.WriteLine("Ordering by ID!");
+                        expenses = expenses.OrderBy(e => e.ExpenseId).ToList();
+                        break;
+                }
                 // Print out expenses in tabular format
                 var colFormatStr = " {0, -2} | {1, -9} | {2, -20} | {3, -20} | {4, -30}";
                 Console.WriteLine(colFormatStr, "ID", "Amount", "Category", "Date", "Description");
                 Console.WriteLine(new string('-', 80));
-                foreach (ExpenseModel item in db.Expenses) {
+                foreach (ExpenseModel item in expenses) {
                     Console.WriteLine(colFormatStr, 
                         item.ExpenseId,
                         "$" + item.Amount.ToString("F2"),
@@ -149,12 +188,12 @@
                     Console.Write($"Invalid format. Please enter corresponding ID number: ");
                 }
                 Console.WriteLine("You selected the following expense: ");
-                Console.WriteLine($"1. Amount (${expense.Amount.ToString("F2")})");
-                Console.WriteLine($"2. Category ({expense.Category})");
-                Console.WriteLine($"3. Date ({expense.Date.ToString("MM/dd/yyyy hh:mm tt")})");
-                Console.WriteLine($"4. Description ({expense.Description ?? "N/A"})");
+                Console.WriteLine($"    1. Amount (${expense.Amount.ToString("F2")})");
+                Console.WriteLine($"    2. Category ({expense.Category})");
+                Console.WriteLine($"    3. Date ({expense.Date.ToString("MM/dd/yyyy hh:mm tt")})");
+                Console.WriteLine($"    4. Description ({expense.Description ?? "N/A"})");
                 Console.Write("Which field would you like to edit? ");
-                while (!int.TryParse(Console.ReadLine(), out field) | field <= 0 | field > 4) {
+                while (!int.TryParse(Console.ReadLine(), out field) || field <= 0 || field > 4) {
                     Console.Write("Invalid format. Please enter field number (1 - 4): ");
                 }
                 switch (field) {
@@ -196,10 +235,10 @@
                     Console.Write($"Invalid format. Please enter corresponding ID number: ");
                 }
                 Console.WriteLine("You selected the following expense: ");
-                Console.WriteLine($"Amount: ${expense.Amount.ToString("F2")}");
-                Console.WriteLine($"Category: {expense.Category}");
-                Console.WriteLine($"Date: {expense.Date.ToString("MM/dd/yyyy hh:mm tt")}");
-                Console.WriteLine($"Description: {expense.Description ?? "N/A"}");
+                Console.WriteLine($"    Amount: ${expense.Amount.ToString("F2")}");
+                Console.WriteLine($"    Category: {expense.Category}");
+                Console.WriteLine($"    Date: {expense.Date.ToString("MM/dd/yyyy hh:mm tt")}");
+                Console.WriteLine($"    Description: {expense.Description ?? "N/A"}");
                 Console.WriteLine("Are you sure you want to delete this expense? Press Y to confirm.");
                 if (string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase)) {
                     db.Expenses.Remove(expense);
