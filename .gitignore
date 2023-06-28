@@ -4,3 +4,5 @@ obj/
 .config
 Migrations
 *.db*
+publish/
+git_rewrite.sh
